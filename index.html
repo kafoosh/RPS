@@ -662,15 +662,22 @@
       renderLenny('game-lenny','idle','bob');
       arena().innerHTML = `
         <div class="arena-status">LENNY'S LOCKED IN.</div>
-        <p class="arena-hint">Remember: you've still got ${remainingText()} left to play. Pick wisely, then hit the button.</p>
+        <p class="arena-hint">${remainingHint()}</p>
         <button class="btn btn-xl btn-red display" id="btn-throw" type="button">I'M READY ▸</button>`;
       document.getElementById('btn-throw').addEventListener('click', runCountdown);
       document.getElementById('btn-throw').focus();
     }, wait);
   }
 
-  function remainingText(){
-    return state.userRemaining.map(m=>`<b class="left-move">${NAME[m]}</b>`).join(' <span class="left-sep">·</span> ');
+  function remainingHint(){
+    const count = state.userRemaining.length;
+    if(count === 3){
+      return `It's the first round, so all <b>3 of 3</b> throws are open to you: <b class="left-move">ROCK</b>, <b class="left-move">PAPER</b>, or <b class="left-move">SCISSORS</b>. Just know that whatever you play now is used up and can't be picked again in the rounds that follow.`;
+    }
+    if(count === 2){
+      return `You've used one throw already, so you've got <b>2 of 3</b> left to choose from. Pick one of the two you haven't played yet, and that one is off the table for the final round too.`;
+    }
+    return `Last round, and you're down to your final <b>1 of 3</b>. There's only one throw you haven't used yet, so go ahead and play it.`;
   }
 
   function runCountdown(){
