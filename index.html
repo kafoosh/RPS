@@ -1,11 +1,878 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Never Lose Lenny</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#f4f1e9;
+    --ink:#111110;
+    --red:#ff4d2e;
+    --blue:#2b4cff;
+    --yellow:#ffd000;
+    --white:#fffdf6;
+    --shadow: 8px 8px 0 var(--ink);
+    --shadow-sm: 5px 5px 0 var(--ink);
+    --bw: 4px;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html,body{ height:100%; }
+
+  body{
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family:"Space Mono", ui-monospace, monospace;
+    min-height:100dvh;
+    overflow-x:hidden;
+    position:relative;
+    -webkit-font-smoothing:antialiased;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  /* riso grain / noise + halftone overlays */
+  body::before{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    opacity:.5; mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  body::after{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    opacity:.06;
+    background-image:radial-gradient(var(--ink) 1px, transparent 1.4px);
+    background-size:7px 7px;
+  }
+
+  .sr-only{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+
+  /* ============ TYPE ============ */
+  .display{
+    font-family:"Anton", Impact, sans-serif;
+    font-weight:400; text-transform:uppercase;
+    letter-spacing:-.01em; line-height:.86;
+  }
+  .archivo{ font-family:"Archivo Black", sans-serif; text-transform:uppercase; }
+  .kicker{
+    font-family:"Space Mono", monospace; font-weight:700;
+    text-transform:uppercase; letter-spacing:.28em; font-size:clamp(.62rem,2.4vw,.8rem);
+  }
+
+  /* ============ APP SHELL ============ */
+  #app{ position:relative; z-index:1; min-height:100dvh; display:flex; flex-direction:column; }
+  .screen{ display:none; flex:1; flex-direction:column; }
+  .screen.active{ display:flex; }
+  .wrap{
+    width:100%; max-width:760px; margin:0 auto; padding:clamp(1rem,4vw,2.2rem);
+    flex:1; display:flex; flex-direction:column; gap:clamp(1rem,3vw,1.6rem);
+  }
+
+  /* ============ STICKER PRIMITIVES ============ */
+  .tag{
+    display:inline-block; border:var(--bw) solid var(--ink);
+    padding:.35em .7em; font-weight:700; text-transform:uppercase;
+    letter-spacing:.12em; font-size:clamp(.6rem,2.3vw,.78rem);
+    box-shadow:var(--shadow-sm); background:var(--yellow);
+  }
+  .card{
+    background:var(--white); border:var(--bw) solid var(--ink);
+    box-shadow:var(--shadow); padding:clamp(1.1rem,4vw,2rem);
+  }
+
+  /* ============ BUTTONS ============ */
+  .btn{
+    font-family:"Archivo Black", sans-serif; text-transform:uppercase;
+    border:var(--bw) solid var(--ink); background:var(--yellow); color:var(--ink);
+    box-shadow:var(--shadow); cursor:pointer; padding:.7em 1.1em;
+    letter-spacing:.02em; line-height:1; transition:transform .07s ease, box-shadow .07s ease;
+    display:inline-flex; align-items:center; justify-content:center; gap:.5em;
+    text-align:center; width:100%;
+  }
+  .btn:hover{ transform:translate(-2px,-2px); box-shadow:11px 11px 0 var(--ink); }
+  .btn:active{ transform:translate(4px,4px); box-shadow:3px 3px 0 var(--ink); }
+  .btn:focus-visible{ outline:4px dashed var(--blue); outline-offset:4px; }
+  .btn-xl{ font-size:clamp(1.5rem,7vw,2.6rem); padding:.55em .8em; }
+  .btn-red{ background:var(--red); color:var(--white); }
+  .btn-blue{ background:var(--blue); color:var(--white); }
+  .btn-yellow{ background:var(--yellow); }
+  .btn-paper{ background:var(--white); }
+
+  /* ============ INTRO ============ */
+  .intro-head{ text-align:center; display:flex; flex-direction:column; align-items:center; gap:.4rem; }
+  .intro-kicker{ color:var(--red); }
+  .title{
+    font-size:clamp(3.4rem,18vw,8.2rem);
+    text-shadow:6px 6px 0 var(--red);
+    color:var(--ink);
+  }
+  .title .l2{ display:block; color:var(--blue); text-shadow:6px 6px 0 var(--ink); }
+  .sub-strap{
+    font-size:clamp(.78rem,3.2vw,1rem); font-weight:700; max-width:46ch; margin:0 auto;
+    line-height:1.45;
+  }
+  .mascot-stage{ display:flex; justify-content:center; align-items:flex-end; }
+  .lenny-frame{
+    width:clamp(170px,42vw,230px); border:var(--bw) solid var(--ink);
+    background:var(--white); box-shadow:var(--shadow); padding:14px;
+    position:relative;
+  }
+  .lenny-frame .pin{
+    position:absolute; top:-16px; left:50%; transform:translateX(-50%);
+    background:var(--red); color:var(--white); border:3px solid var(--ink);
+    font-size:.6rem; font-weight:700; letter-spacing:.16em; padding:.25em .6em;
+    text-transform:uppercase; box-shadow:3px 3px 0 var(--ink);
+  }
+  svg.lenny{ width:100%; height:auto; display:block; }
+
+  .rules{ display:grid; grid-template-columns:1fr; gap:1rem; }
+  @media(min-width:620px){ .rules{ grid-template-columns:1fr 1fr; } }
+  .rule{ border:var(--bw) solid var(--ink); padding:1rem 1.1rem; box-shadow:var(--shadow-sm); position:relative; }
+  .rule h3{ font-family:"Archivo Black",sans-serif; font-size:1rem; text-transform:uppercase; margin-bottom:.4rem; }
+  .rule p{ font-size:.82rem; line-height:1.5; font-weight:700; }
+  .rule .num{
+    position:absolute; top:-14px; right:-12px; width:38px; height:38px;
+    border:var(--bw) solid var(--ink); border-radius:50%; background:var(--yellow);
+    font-family:"Anton",sans-serif; font-size:1.3rem; display:flex; align-items:center;
+    justify-content:center; box-shadow:3px 3px 0 var(--ink);
+  }
+  .rule-rock{ background:var(--red); color:var(--white); }
+  .rule-rock .num{ background:var(--red); color:var(--white); }
+
+  .marquee{
+    border:var(--bw) solid var(--ink); background:var(--blue); color:var(--white);
+    overflow:hidden; white-space:nowrap; box-shadow:var(--shadow-sm); padding:.55rem 0;
+  }
+  .marquee-track{ display:inline-block; padding-left:100%; animation:scroll 16s linear infinite; }
+  .marquee span{ font-family:"Archivo Black",sans-serif; font-size:1rem; text-transform:uppercase; letter-spacing:.08em; }
+  .marquee span b{ color:var(--yellow); }
+  @keyframes scroll{ from{ transform:translateX(0);} to{ transform:translateX(-100%);} }
+
+  /* ============ GAME ============ */
+  .topbar{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; flex-wrap:wrap; }
+  .roundtag{ background:var(--red); color:var(--white); }
+  .dots{ display:flex; gap:.5rem; }
+  .dot{
+    width:clamp(22px,6vw,30px); height:clamp(22px,6vw,30px); border:var(--bw) solid var(--ink);
+    background:var(--white); display:flex; align-items:center; justify-content:center;
+    box-shadow:3px 3px 0 var(--ink); font-family:"Anton",sans-serif; font-size:1rem;
+  }
+  .dot.win{ background:var(--blue); color:var(--white); }
+  .dot.draw{ background:var(--yellow); }
+  .dot.lose{ background:var(--ink); color:var(--white); }
+  .dot.current{ outline:4px dashed var(--red); outline-offset:3px; }
+
+  .arena{
+    border:var(--bw) solid var(--ink); background:var(--white); box-shadow:var(--shadow);
+    padding:clamp(1.1rem,4vw,1.8rem); display:flex; flex-direction:column;
+    align-items:center; gap:1rem; text-align:center; min-height:clamp(330px,52vh,420px);
+    justify-content:center; position:relative; overflow:hidden;
+  }
+  .arena .corner-tape{
+    position:absolute; top:10px; right:-44px; transform:rotate(45deg);
+    background:var(--yellow); border-top:3px solid var(--ink); border-bottom:3px solid var(--ink);
+    font-family:"Space Mono",monospace; font-weight:700; font-size:.62rem; letter-spacing:.2em;
+    padding:.3em 3em; text-transform:uppercase;
+  }
+
+  .lenny-game{ width:clamp(140px,34vw,180px); }
+  .lenny-game .lenny-frame{ width:100%; }
+
+  .arena-status{ font-family:"Archivo Black",sans-serif; text-transform:uppercase; font-size:clamp(1rem,4.5vw,1.5rem); letter-spacing:.01em; }
+  .arena-hint{ font-size:.8rem; font-weight:700; max-width:34ch; line-height:1.45; }
+
+  .thinking-dots span{ animation:blink 1s infinite; }
+  .thinking-dots span:nth-child(2){ animation-delay:.2s; }
+  .thinking-dots span:nth-child(3){ animation-delay:.4s; }
+  @keyframes blink{ 0%,100%{opacity:.2;} 50%{opacity:1;} }
+
+  /* countdown overlay */
+  .countdown{
+    position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+    z-index:5; background:var(--paper);
+  }
+  .countdown.show{ display:flex; }
+  .countdown .word{
+    font-family:"Anton",sans-serif; text-transform:uppercase; line-height:.8;
+    font-size:clamp(3.6rem,20vw,9rem); letter-spacing:-.02em; text-align:center;
+  }
+  .cd-rock{ color:var(--red); text-shadow:6px 6px 0 var(--ink); }
+  .cd-paper{ color:var(--blue); text-shadow:6px 6px 0 var(--ink); }
+  .cd-scissors{ color:var(--ink); text-shadow:6px 6px 0 var(--yellow); }
+  .cd-go{ color:var(--white); -webkit-text-stroke:3px var(--ink); text-shadow:8px 8px 0 var(--red); }
+  .slam{ animation:slam .42s cubic-bezier(.2,1.5,.4,1) both; }
+  @keyframes slam{
+    0%{ transform:scale(2.4) rotate(-8deg); opacity:0; }
+    60%{ transform:scale(.9) rotate(2deg); opacity:1; }
+    100%{ transform:scale(1) rotate(-2deg); opacity:1; }
+  }
+
+  /* lenny throw reveal */
+  .throw-reveal{ display:flex; flex-direction:column; align-items:center; gap:.5rem; }
+  .throw-symbol{
+    font-size:clamp(4.5rem,22vw,8rem); line-height:1; filter:drop-shadow(5px 5px 0 var(--ink));
+  }
+  .throw-label{
+    font-family:"Anton",sans-serif; text-transform:uppercase; font-size:clamp(1.6rem,8vw,2.6rem);
+    letter-spacing:.02em;
+  }
+  .throw-symbol.pop{ animation:pop .4s cubic-bezier(.2,1.4,.4,1) both; }
+  @keyframes pop{ 0%{ transform:scale(.2) rotate(-12deg); opacity:0;} 100%{ transform:scale(1) rotate(-4deg); opacity:1;} }
+
+  /* report buttons */
+  .report{ display:grid; grid-template-columns:1fr; gap:.7rem; width:100%; max-width:380px; }
+  @media(min-width:520px){ .report{ grid-template-columns:repeat(3,1fr); } }
+  .report .btn{ font-size:clamp(.95rem,3.6vw,1.15rem); padding:.85em .4em; flex-direction:column; gap:.25em; }
+  .report .btn small{ font-family:"Space Mono",monospace; font-weight:700; font-size:.58rem; letter-spacing:.14em; opacity:.85; }
+
+  .question{ font-family:"Anton",sans-serif; text-transform:uppercase; font-size:clamp(1.2rem,5.5vw,1.9rem); }
+
+  /* ============ RESULT ============ */
+  .result-head{ text-align:center; display:flex; flex-direction:column; gap:.4rem; align-items:center; }
+  .result-title{
+    font-size:clamp(2.8rem,15vw,6.4rem); color:var(--blue); text-shadow:6px 6px 0 var(--ink);
+  }
+  .result-title.drew{ color:var(--yellow); -webkit-text-stroke:2px var(--ink); }
+  .result-title.busted{ color:var(--red); text-shadow:6px 6px 0 var(--ink); }
+  .arena-hint .left-move{ background:var(--yellow); padding:.04em .32em; font-weight:700; box-decoration-break:clone; -webkit-box-decoration-break:clone; }
+  .arena-hint .left-sep{ opacity:.45; }
+  .tally{ display:grid; grid-template-columns:repeat(3,1fr); gap:.8rem; }
+  .tally .cell{
+    border:var(--bw) solid var(--ink); box-shadow:var(--shadow-sm); padding:1rem .4rem;
+    text-align:center; background:var(--white);
+  }
+  .tally .cell .n{ font-family:"Anton",sans-serif; font-size:clamp(2.4rem,12vw,3.6rem); line-height:.9; }
+  .tally .cell .lab{ font-weight:700; text-transform:uppercase; letter-spacing:.14em; font-size:.6rem; margin-top:.3rem; }
+  .tally .lenny-cell{ background:var(--red); color:var(--white); }
+  .tally .draw-cell{ background:var(--yellow); }
+  .tally .you-cell{ background:var(--blue); color:var(--white); }
+
+  .recap{
+    border:var(--bw) solid var(--ink); box-shadow:var(--shadow-sm); background:var(--white);
+    padding:1rem 1.1rem; font-size:.78rem; font-weight:700; line-height:1.6;
+  }
+  .recap h3{ font-family:"Archivo Black",sans-serif; font-size:.95rem; text-transform:uppercase; margin-bottom:.5rem; }
+  .recap-row{ display:flex; gap:.6rem; align-items:baseline; padding:.25rem 0; border-top:2px dashed var(--ink); }
+  .recap-row:first-of-type{ border-top:none; }
+  .recap-row .r-no{ font-family:"Anton",sans-serif; font-size:1.1rem; min-width:1.4em; }
+  .recap-row .r-out{ margin-left:auto; text-transform:uppercase; font-weight:700; letter-spacing:.06em; }
+  .r-win{ color:var(--blue); } .r-draw{ color:#b88f00; } .r-lose{ color:var(--red); }
+
+  .footer-note{ text-align:center; font-size:.66rem; font-weight:700; letter-spacing:.1em; opacity:.7; text-transform:uppercase; padding:.5rem; }
+
+  /* sticker rotations */
+  .rot-l{ transform:rotate(-2.2deg); }
+  .rot-r{ transform:rotate(1.8deg); }
+  .rot-s{ transform:rotate(-1deg); }
+
+  /* confetti */
+  .confetti{ position:fixed; inset:0; pointer-events:none; z-index:50; overflow:hidden; }
+  .confetti i{
+    position:absolute; top:-20px; width:14px; height:18px; border:2px solid var(--ink);
+    animation:fall linear forwards;
+  }
+  @keyframes fall{
+    to{ transform:translateY(110vh) rotate(720deg); }
+  }
+
+  /* ===== reduced motion ===== */
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
+    .marquee-track{ animation:none; padding-left:0; }
+    .lenny-bob, .lenny-blink{ animation:none !important; }
+    .confetti{ display:none; }
+  }
+
+  /* lenny idle motion */
+  @keyframes bob{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-6px);} }
+  @keyframes blinkeye{ 0%,92%,100%{ transform:scaleY(1);} 96%{ transform:scaleY(.08);} }
+  .lenny[data-anim="bob"] .lenny-body{ transform-box:fill-box; transform-origin:center; animation:bob 2.6s ease-in-out infinite; }
+  .lenny .eye-lid{ transform-box:fill-box; transform-origin:center; animation:blinkeye 4.2s infinite; }
+  @keyframes wiggle{ 0%,100%{ transform:rotate(0);} 25%{transform:rotate(-5deg);} 75%{transform:rotate(5deg);} }
+  .lenny[data-mood="happy"] .lenny-body{ transform-box:fill-box; transform-origin:bottom center; animation:wiggle .5s ease-in-out infinite; }
+  @keyframes shiver{ 0%,100%{transform:translateX(0);} 25%{transform:translateX(-3px);} 75%{transform:translateX(3px);} }
+  .lenny[data-mood="sad"] .lenny-body{ transform-box:fill-box; transform-origin:center; animation:shiver .25s ease-in-out 3; }
+  @keyframes think{ 0%,100%{ transform:translateY(0) rotate(0);} 50%{ transform:translateY(-2px) rotate(-3deg);} }
+  .lenny[data-mood="thinking"] .antenna-bulb{ transform-box:fill-box; transform-origin:bottom center; animation:think .8s ease-in-out infinite; }
+</style>
 </head>
 <body>
-    <h1>hello world</h1>
+<div id="app">
+
+  <!-- =================== INTRO =================== -->
+  <section class="screen active" id="screen-intro" aria-label="Intro">
+    <div class="wrap">
+      <div class="intro-head">
+        <span class="tag rot-r intro-kicker" style="background:var(--blue);color:var(--white)">★ Undefeated Since Forever ★</span>
+        <h1 class="display title">NEVER LOSE<span class="l2">LENNY</span></h1>
+        <p class="kicker" style="color:var(--red)">Rock Paper Scissors</p>
+      </div>
+
+      <div class="mascot-stage">
+        <div class="lenny-frame rot-l">
+          <span class="pin">Blindfolded</span>
+          <div id="intro-lenny"></div>
+        </div>
+      </div>
+
+      <div class="card rot-s">
+        <p class="sub-strap">
+          Meet <b>Lenny</b>. He plays Rock Paper Scissors <b>blindfolded</b>. He literally can't
+          see your hand, so he trusts you to honestly call each round.
+        </p>
+        <p class="sub-strap" style="margin-top:.85rem">
+          Here's the thing: <b>Lenny's never lost. Not once.</b> Best of three?
+        </p>
+      </div>
+
+      <div class="rules">
+        <div class="rule rule-rock rot-l">
+          <span class="num">1</span>
+          <h3>You</h3>
+          <p>You may throw Rock, Paper and Scissors <b>ONLY once each</b> across the 3 rounds.</p>
+        </div>
+        <div class="rule rot-r" style="background:var(--yellow)">
+          <span class="num">2</span>
+          <h3>Lenny</h3>
+          <p>Since he can't see you, Lenny just <b>repeats</b> whatever throw he likes and trusts your honest call.</p>
+        </div>
+      </div>
+
+      <div class="marquee" aria-hidden="true">
+        <div class="marquee-track">
+          <span><b>YOU CALL THE SCORE</b> &nbsp;•&nbsp; LENNY CAN'T PEEK &nbsp;•&nbsp; <b>ONE OF EACH, PLAYER</b> &nbsp;•&nbsp; NEVER LOSE LENNY &nbsp;•&nbsp; </span>
+        </div>
+      </div>
+
+      <button class="btn btn-xl btn-red display rot-s" id="btn-start" type="button">LET'S GO ▸</button>
+    </div>
+  </section>
+
+  <!-- =================== GAME =================== -->
+  <section class="screen" id="screen-game" aria-label="Game">
+    <div class="wrap">
+      <div class="topbar">
+        <span class="tag roundtag display" id="round-tag" style="font-family:'Anton',sans-serif;letter-spacing:.05em">ROUND 1 / 3</span>
+        <div class="dots" id="dots" aria-label="Round results"></div>
+      </div>
+
+      <div class="arena">
+        <span class="corner-tape" aria-hidden="true">BLINDFOLDED · TRUST</span>
+
+        <div class="lenny-game">
+          <div class="lenny-frame">
+            <div id="game-lenny"></div>
+          </div>
+        </div>
+
+        <div id="arena-body" style="display:flex;flex-direction:column;align-items:center;gap:1rem;width:100%">
+          <!-- dynamic content injected here -->
+        </div>
+
+        <!-- countdown overlay -->
+        <div class="countdown" id="countdown" aria-hidden="true">
+          <div class="word" id="cd-word"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================== RESULT =================== -->
+  <section class="screen" id="screen-result" aria-label="Result">
+    <div class="wrap">
+      <div class="result-head">
+        <span class="tag rot-l" id="result-kicker" style="background:var(--red);color:var(--white)">FINAL WHISTLE</span>
+        <h2 class="display result-title" id="result-title">LENNY WINS</h2>
+      </div>
+
+      <div class="mascot-stage">
+        <div class="lenny-frame rot-r">
+          <span class="pin" id="result-pin" style="background:var(--blue)">Still Undefeated</span>
+          <div id="result-lenny"></div>
+        </div>
+      </div>
+
+      <div class="tally">
+        <div class="cell lenny-cell rot-l"><div class="n" id="t-lenny">0</div><div class="lab">Lenny</div></div>
+        <div class="cell draw-cell rot-s"><div class="n" id="t-draw">0</div><div class="lab">Draws</div></div>
+        <div class="cell you-cell rot-r"><div class="n" id="t-you">0</div><div class="lab">You</div></div>
+      </div>
+
+      <div class="recap rot-s">
+        <h3>The Tape ▸ Round By Round</h3>
+        <div id="recap-rows"></div>
+      </div>
+
+      <p class="sub-strap" id="result-quip" style="text-align:center"></p>
+
+      <button class="btn btn-xl btn-blue display rot-l" id="btn-again" type="button">RUN IT BACK ↻</button>
+      <p class="footer-note">Lenny's record: ∞ to 0. He'd like to keep it that way.</p>
+    </div>
+  </section>
+
+  <!-- =================== BUSTED (disputed / dishonest set win) =================== -->
+  <section class="screen" id="screen-busted" aria-label="Disputed result">
+    <div class="wrap">
+      <div class="result-head">
+        <span class="tag rot-l" style="background:var(--ink);color:var(--yellow)">★ Under Official Review ★</span>
+        <h2 class="display result-title busted">LENNY LOST?</h2>
+      </div>
+
+      <div class="mascot-stage">
+        <div class="lenny-frame rot-r">
+          <span class="pin" style="background:var(--red)">Suspicious</span>
+          <div id="busted-lenny"></div>
+        </div>
+      </div>
+
+      <div class="card rot-s">
+        <p class="sub-strap" id="busted-copy"></p>
+      </div>
+
+      <button class="btn btn-xl btn-yellow display rot-l" id="btn-again-busted" type="button">PROVE IT FAIR ↻</button>
+      <p class="footer-note">Lenny's record: ∞ to 0. Allegedly.</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ TRICK ENGINE ============ */
+  const BEATS = { rock:'scissors', paper:'rock', scissors:'paper' }; // key beats value
+  const beats = (a,b) => BEATS[a] === b;
+  const whatBeats = x => ({scissors:'rock', rock:'paper', paper:'scissors'})[x]; // move that beats x
+  const whatLosesTo = x => BEATS[x]; // move x beats
+
+  function deduceUserMove(lennyMove, result){
+    if(result==='draw') return lennyMove;
+    if(result==='win')  return whatBeats(lennyMove);
+    if(result==='lose') return whatLosesTo(lennyMove);
+  }
+  function lennyMoveFromPair([a,b]){ return beats(a,b) ? a : b; }
+
+  const EMOJI = { rock:'\u{1FAA8}', paper:'\u{1F4C4}', scissors:'✂️' };
+  const NAME  = { rock:'ROCK', paper:'PAPER', scissors:'SCISSORS' };
+  const MOVES = ['rock','paper','scissors'];
+
+  /* ============ STATE ============ */
+  let state;
+  function freshState(){
+    return {
+      round: 0,                 // 0-based
+      userRemaining: ['rock','paper','scissors'],
+      lennyMove: null,
+      score: { lenny:0, draw:0, you:0 },
+      history: []               // {round, lenny, result(player perspective), userMove}
+    };
+  }
+
+  /* ============ LENNY SPRITE (pixel-art SVG) ============ */
+  // mood: idle | thinking | happy | neutral | sad
+  function lennySVG(mood, anim){
+    mood = mood || 'idle';
+    anim = anim || 'bob';
+    // eyes & mouth differ per mood; drawn with blocky rects, crispEdges
+    let eyes, mouth, blush='', extra='';
+    const P = { red:'#ff4d2e', blue:'#2b4cff', yellow:'#ffd000', ink:'#111110', white:'#fffdf6', cream:'#ffe9c7' };
+
+    // default eye geometry (open round-ish blocky eyes)
+    function eyeOpen(cx){
+      return `
+        <rect x="${cx-9}" y="44" width="18" height="20" fill="${P.white}"/>
+        <rect class="eye-lid" x="${cx-9}" y="44" width="18" height="20" fill="${P.white}"/>
+        <rect x="${cx-4}" y="48" width="9" height="12" fill="${P.ink}"/>
+        <rect x="${cx-1}" y="50" width="3" height="3" fill="${P.white}"/>`;
+    }
+    function eyeHappy(cx){ // upside-down U (^_^)
+      return `
+        <rect x="${cx-9}" y="54" width="18" height="4" fill="${P.ink}"/>
+        <rect x="${cx-9}" y="50" width="4" height="4" fill="${P.ink}"/>
+        <rect x="${cx+5}" y="50" width="4" height="4" fill="${P.ink}"/>
+        <rect x="${cx-13}" y="50" width="4" height="4" fill="${P.ink}"/>
+        <rect x="${cx+9}" y="50" width="4" height="4" fill="${P.ink}"/>`;
+    }
+    function eyeSad(cx, dir){ // droopy eyes
+      return `
+        <rect x="${cx-9}" y="48" width="18" height="16" fill="${P.white}"/>
+        <rect x="${cx-4}" y="54" width="9" height="10" fill="${P.ink}"/>
+        <rect x="${cx-10}" y="44" width="14" height="4" fill="${P.ink}" transform="rotate(${dir*12} ${cx} 46)"/>`;
+    }
+    function eyeThink(cx){ // looking up-side
+      return `
+        <rect x="${cx-9}" y="44" width="18" height="20" fill="${P.white}"/>
+        <rect x="${cx-1}" y="46" width="9" height="11" fill="${P.ink}"/>
+        <rect x="${cx+2}" y="48" width="3" height="3" fill="${P.white}"/>`;
+    }
+    function eyeSus(cx){ // narrowed, skeptical (heavy lid)
+      return `
+        <rect x="${cx-9}" y="48" width="18" height="14" fill="${P.white}"/>
+        <rect x="${cx-9}" y="46" width="18" height="9" fill="${P.ink}"/>
+        <rect x="${cx-2}" y="55" width="8" height="6" fill="${P.ink}"/>`;
+    }
+
+    if(mood==='happy'){
+      eyes = eyeHappy(50) + eyeHappy(98);
+      mouth = `<rect x="58" y="74" width="32" height="6" fill="${P.ink}"/>
+               <rect x="58" y="74" width="6" height="12" fill="${P.ink}"/>
+               <rect x="84" y="74" width="6" height="12" fill="${P.ink}"/>
+               <rect x="62" y="80" width="24" height="8" fill="${P.red}"/>`;
+      blush = `<rect x="30" y="66" width="12" height="7" fill="${P.red}" opacity=".55"/>
+               <rect x="106" y="66" width="12" height="7" fill="${P.red}" opacity=".55"/>`;
+      extra = `<rect x="20" y="22" width="6" height="6" fill="${P.yellow}"/>
+               <rect x="122" y="20" width="6" height="6" fill="${P.blue}"/>
+               <rect x="14" y="40" width="5" height="5" fill="${P.red}"/>`;
+    } else if(mood==='sad'){
+      eyes = eyeSad(50,-1) + eyeSad(98,1);
+      mouth = `<rect x="60" y="84" width="28" height="6" fill="${P.ink}"/>
+               <rect x="56" y="80" width="6" height="6" fill="${P.ink}"/>
+               <rect x="86" y="80" width="6" height="6" fill="${P.ink}"/>`;
+      extra = `<rect x="44" y="64" width="5" height="9" fill="${P.blue}" opacity=".8"/>`; // tear
+    } else if(mood==='neutral'){
+      eyes = eyeOpen(50) + eyeOpen(98);
+      mouth = `<rect x="60" y="82" width="28" height="6" fill="${P.ink}"/>`;
+    } else if(mood==='thinking'){
+      eyes = eyeThink(50) + eyeThink(98);
+      mouth = `<rect x="66" y="84" width="14" height="6" fill="${P.ink}"/>
+               <rect x="80" y="80" width="6" height="6" fill="${P.ink}"/>`;
+      extra = `<rect x="118" y="30" width="6" height="6" fill="${P.ink}" opacity=".5"/>
+               <rect x="128" y="20" width="9" height="9" fill="${P.ink}" opacity=".5"/>
+               <rect x="138" y="8" width="12" height="12" fill="${P.ink}" opacity=".5"/>`;
+    } else if(mood==='suspicious'){
+      eyes = eyeSus(50) + eyeSus(98);
+      mouth = `<rect x="58" y="86" width="32" height="6" fill="${P.ink}" transform="rotate(-7 74 89)"/>`;
+      // a crude little "?" floating by his head
+      extra = `<rect x="120" y="20" width="6" height="6" fill="${P.ink}"/>
+               <rect x="126" y="14" width="8" height="6" fill="${P.ink}"/>
+               <rect x="132" y="20" width="6" height="6" fill="${P.ink}"/>
+               <rect x="126" y="26" width="6" height="6" fill="${P.ink}"/>
+               <rect x="126" y="36" width="6" height="6" fill="${P.ink}"/>`;
+    } else { // idle
+      eyes = eyeOpen(50) + eyeOpen(98);
+      mouth = `<rect x="60" y="80" width="28" height="6" fill="${P.ink}"/>
+               <rect x="56" y="76" width="6" height="6" fill="${P.ink}"/>
+               <rect x="86" y="76" width="6" height="6" fill="${P.ink}"/>`;
+    }
+
+    return `
+    <svg class="lenny" data-mood="${mood}" data-anim="${anim}" viewBox="0 0 148 172" width="100%"
+         role="img" aria-label="Lenny the mascot, ${mood}" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
+      <g class="lenny-body">
+        <!-- antenna -->
+        <rect x="71" y="2" width="6" height="14" fill="${P.ink}"/>
+        <rect class="antenna-bulb" x="65" y="-2" width="18" height="14" fill="${P.red}" rx="0"/>
+        <rect class="antenna-bulb" x="69" y="0" width="6" height="4" fill="${P.white}"/>
+
+        <!-- body / head blob (bean) with thick outline -->
+        <rect x="14" y="18" width="120" height="118" fill="${P.ink}"/>
+        <rect x="18" y="22" width="112" height="110" fill="${P.yellow}"/>
+        <!-- inner face panel -->
+        <rect x="26" y="34" width="96" height="70" fill="${P.cream}"/>
+        <rect x="26" y="34" width="96" height="70" fill="none" stroke="${P.ink}" stroke-width="4"/>
+
+        <!-- feet -->
+        <rect x="34" y="132" width="22" height="14" fill="${P.ink}"/>
+        <rect x="38" y="136" width="14" height="8" fill="${P.blue}"/>
+        <rect x="92" y="132" width="22" height="14" fill="${P.ink}"/>
+        <rect x="96" y="136" width="14" height="8" fill="${P.blue}"/>
+
+        <!-- little arms -->
+        <rect x="6" y="74" width="12" height="10" fill="${P.ink}"/>
+        <rect x="130" y="74" width="12" height="10" fill="${P.ink}"/>
+
+        ${blush}
+        ${eyes}
+        ${mouth}
+        ${extra}
+      </g>
+    </svg>`;
+  }
+
+  function renderLenny(targetId, mood, anim){
+    document.getElementById(targetId).innerHTML = lennySVG(mood, anim);
+  }
+
+  /* ============ SCREEN MGMT ============ */
+  function show(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  /* ============ DOTS ============ */
+  function renderDots(){
+    const dots = document.getElementById('dots');
+    dots.innerHTML = '';
+    for(let i=0;i<3;i++){
+      const d = document.createElement('div');
+      d.className = 'dot';
+      const h = state.history[i];
+      if(h){
+        if(h.result==='win'){ d.classList.add('win'); d.textContent='Y'; }
+        else if(h.result==='draw'){ d.classList.add('draw'); d.textContent='='; }
+        else { d.classList.add('lose'); d.textContent='L'; }
+      } else {
+        d.textContent = i+1;
+        if(i===state.round) d.classList.add('current');
+      }
+      dots.appendChild(d);
+    }
+  }
+
+  /* ============ GAME FLOW ============ */
+  const arena = () => document.getElementById('arena-body');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function startGame(){
+    state = freshState();
+    show('screen-game');
+    beginRound();
+  }
+
+  function beginRound(){
+    // compute Lenny's move BEFORE the throw
+    if(state.round===0){
+      state.lennyMove = MOVES[Math.floor(Math.random()*3)];
+    } else if(state.round===1){
+      state.lennyMove = lennyMoveFromPair(state.userRemaining);
+    } else {
+      state.lennyMove = whatBeats(state.userRemaining[0]); // guaranteed Lenny win
+    }
+
+    document.getElementById('round-tag').textContent = `ROUND ${state.round+1} / 3`;
+    renderDots();
+    renderLenny('game-lenny','idle','bob');
+
+    // "Lenny decides" thinking beat
+    arena().innerHTML = `
+      <div class="arena-status">LENNY IS DECIDING<span class="thinking-dots"><span>.</span><span>.</span><span>.</span></span></div>
+      <p class="arena-hint">He can't see your hand, he's just picking a throw to commit to. Blindfold's on.</p>`;
+    renderLenny('game-lenny','thinking','bob');
+
+    const wait = reduceMotion ? 350 : 1300;
+    setTimeout(()=>{
+      renderLenny('game-lenny','idle','bob');
+      arena().innerHTML = `
+        <div class="arena-status">LENNY'S LOCKED IN.</div>
+        <p class="arena-hint">Remember: you've still got ${remainingText()} left to play. Pick wisely, then hit the button.</p>
+        <button class="btn btn-xl btn-red display" id="btn-throw" type="button">I'M READY ▸</button>`;
+      document.getElementById('btn-throw').addEventListener('click', runCountdown);
+      document.getElementById('btn-throw').focus();
+    }, wait);
+  }
+
+  function remainingText(){
+    return state.userRemaining.map(m=>`<b class="left-move">${NAME[m]}</b>`).join(' <span class="left-sep">·</span> ');
+  }
+
+  function runCountdown(){
+    const overlay = document.getElementById('countdown');
+    const wordEl = document.getElementById('cd-word');
+    overlay.classList.add('show');
+    const steps = [
+      {t:'ROCK!', c:'cd-rock'},
+      {t:'PAPER!', c:'cd-paper'},
+      {t:'SCISSORS!', c:'cd-scissors'},
+      {t:'GO!', c:'cd-go'}
+    ];
+    const dur = reduceMotion ? 180 : 480;
+    let i = 0;
+    function step(){
+      const s = steps[i];
+      wordEl.className = 'word ' + s.c + ' slam';
+      wordEl.textContent = s.t;
+      // retrigger animation
+      void wordEl.offsetWidth;
+      i++;
+      if(i < steps.length){
+        setTimeout(step, dur);
+      } else {
+        setTimeout(()=>{ overlay.classList.remove('show'); revealThrow(); }, dur);
+      }
+    }
+    step();
+  }
+
+  function revealThrow(){
+    const m = state.lennyMove;
+    renderLenny('game-lenny','idle','bob');
+    arena().innerHTML = `
+      <div class="throw-reveal">
+        <div class="kicker" style="color:var(--blue)">LENNY THREW</div>
+        <div class="throw-symbol pop" aria-hidden="true">${EMOJI[m]}</div>
+        <div class="throw-label">${NAME[m]}</div>
+      </div>
+      <div class="question">DID YOU WIN, LOSE, OR DRAW?</div>
+      <div class="report" id="report">
+        <button class="btn btn-blue" data-r="win" type="button">I WON<small>YOU BEAT HIM</small></button>
+        <button class="btn btn-yellow" data-r="draw" type="button">DREW<small>SAME THROW</small></button>
+        <button class="btn btn-red" data-r="lose" type="button">I LOST<small>HE BEAT YOU</small></button>
+      </div>`;
+    document.querySelectorAll('#report .btn').forEach(b=>{
+      b.addEventListener('click', ()=>reportResult(b.getAttribute('data-r')));
+    });
+  }
+
+  function reportResult(result){
+    // disable buttons to prevent double-report
+    document.querySelectorAll('#report .btn').forEach(b=>{ b.disabled = true; b.style.opacity = .55; });
+
+    const userMove = deduceUserMove(state.lennyMove, result);
+    // remove from remaining
+    const idx = state.userRemaining.indexOf(userMove);
+    if(idx !== -1) state.userRemaining.splice(idx,1);
+
+    // scoreboard (player perspective)
+    if(result==='win') state.score.you++;
+    else if(result==='draw') state.score.draw++;
+    else state.score.lenny++;
+
+    state.history.push({ round: state.round+1, lenny: state.lennyMove, result, userMove });
+    renderDots();
+
+    // Lenny emotes from HIS perspective: player won -> sad; draw -> neutral; player lost -> happy
+    const lennyMood = result==='win' ? 'sad' : (result==='draw' ? 'neutral' : 'happy');
+    renderLenny('game-lenny', lennyMood, lennyMood);
+
+    const emoteLine = {
+      win:  "Oof. You got one past the blindfold... savor it.",
+      draw: "A draw. Lenny shrugs. The streak holds.",
+      lose: "Hah! Lenny felt that one. Told you he can't lose."
+    }[result];
+
+    const reveal = document.querySelector('.throw-reveal');
+    const q = document.querySelector('.question');
+    const rep = document.getElementById('report');
+    if(q) q.remove();
+    if(rep) rep.remove();
+    if(reveal){
+      const note = document.createElement('div');
+      note.className = 'arena-status';
+      note.style.color = result==='win' ? 'var(--blue)' : (result==='draw' ? '#b88f00' : 'var(--red)');
+      note.textContent = (result==='win'?'YOU WON THIS ROUND':result==='draw'?'ROUND DRAWN':'LENNY WON THIS ROUND');
+      const hint = document.createElement('p');
+      hint.className = 'arena-hint';
+      hint.textContent = emoteLine;
+      reveal.after(hint);
+      reveal.after(note);
+    }
+
+    const wait = reduceMotion ? 500 : 1700;
+    setTimeout(()=>{
+      state.round++;
+      if(state.round < 3) beginRound();
+      else endGame();
+    }, wait);
+  }
+
+  /* ============ RESULT ============ */
+  function endGame(){
+    const {lenny, draw, you} = state.score;
+
+    // With honest play the trick caps the player at a single round win, so the set is
+    // always a Lenny win or a draw. If the player has MORE wins than Lenny, the only
+    // explanation is a mis-reported round: route to the suspicious "Lenny lost?" screen.
+    if(you > lenny){ showBusted(); return; }
+
+    document.getElementById('t-lenny').textContent = lenny;
+    document.getElementById('t-draw').textContent = draw;
+    document.getElementById('t-you').textContent = you;
+
+    // Lenny wins or draws the set; player can never win the set with this trick
+    const lennyWonSet = lenny > you;
+    const titleEl = document.getElementById('result-title');
+    const kicker = document.getElementById('result-kicker');
+    const pin = document.getElementById('result-pin');
+    const quip = document.getElementById('result-quip');
+
+    if(lennyWonSet){
+      titleEl.textContent = 'LENNY WINS';
+      titleEl.classList.remove('drew');
+      kicker.textContent = 'FINAL WHISTLE';
+      kicker.style.background = 'var(--red)'; kicker.style.color = 'var(--white)';
+      pin.textContent = 'Still Undefeated';
+      pin.style.background = 'var(--blue)';
+      renderLenny('result-lenny','happy','happy');
+      quip.innerHTML = `That's the magic of a blindfold and an honest opponent. <b>${'∞'} wins, 0 losses.</b> The streak lives.`;
+      launchConfetti();
+    } else {
+      titleEl.textContent = 'HONORABLE DRAW';
+      titleEl.classList.add('drew');
+      kicker.textContent = 'TIED SET';
+      kicker.style.background = 'var(--yellow)'; kicker.style.color = 'var(--ink)';
+      pin.textContent = 'Still Unbeaten';
+      pin.style.background = 'var(--yellow)'; pin.style.color = 'var(--ink)';
+      renderLenny('result-lenny','neutral','bob');
+      quip.innerHTML = `You held him to a draw, but you still couldn't <i>beat</i> him. Nobody does. <b>Streak intact.</b>`;
+    }
+
+    // recap
+    const rows = document.getElementById('recap-rows');
+    rows.innerHTML = '';
+    state.history.forEach(h=>{
+      const outClass = h.result==='win' ? 'r-win' : (h.result==='draw' ? 'r-draw' : 'r-lose');
+      const outText = h.result==='win' ? 'YOU WON' : (h.result==='draw' ? 'DRAW' : 'LENNY WON');
+      const div = document.createElement('div');
+      div.className = 'recap-row';
+      div.innerHTML = `
+        <span class="r-no">R${h.round}</span>
+        <span>Lenny threw <b>${NAME[h.lenny]}</b> ${EMOJI[h.lenny]}</span>
+        <span class="r-out ${outClass}">${outText}</span>`;
+      rows.appendChild(div);
+    });
+
+    show('screen-result');
+    document.getElementById('btn-again').focus();
+  }
+
+  function showBusted(){
+    const { lenny, you } = state.score;
+    renderLenny('busted-lenny','suspicious','bob');
+    document.getElementById('busted-copy').innerHTML =
+      `Hold on. Lenny has <b>never</b> lost. Not once, not in a million rounds. ` +
+      `And now you're telling him you took <b>${you} of 3</b>? ` +
+      `He was <b>blindfolded</b> the whole time, remember. He couldn't see a single throw, ` +
+      `so he only ever had <i>your word</i> for the score. ` +
+      `Lenny isn't <i>saying</i> you fibbed... he's just noting that the math says he doesn't lose, ` +
+      `and the one thing he couldn't check was your honesty. ` +
+      `This one goes in the book with an asterisk the size of his antenna.`;
+    show('screen-busted');
+    document.getElementById('btn-again-busted').focus();
+  }
+
+  function launchConfetti(){
+    if(reduceMotion) return;
+    const colors = ['#ff4d2e','#2b4cff','#ffd000','#fffdf6'];
+    const layer = document.createElement('div');
+    layer.className = 'confetti';
+    document.body.appendChild(layer);
+    for(let i=0;i<60;i++){
+      const c = document.createElement('i');
+      c.style.left = Math.random()*100 + 'vw';
+      c.style.background = colors[i%colors.length];
+      c.style.animationDuration = (2 + Math.random()*2) + 's';
+      c.style.animationDelay = (Math.random()*0.6) + 's';
+      c.style.transform = 'rotate(' + (Math.random()*360) + 'deg)';
+      layer.appendChild(c);
+    }
+    setTimeout(()=>layer.remove(), 4600);
+  }
+
+  /* ============ WIRE UP ============ */
+  renderLenny('intro-lenny','idle','bob');
+  document.getElementById('btn-start').addEventListener('click', startGame);
+  document.getElementById('btn-again').addEventListener('click', startGame);
+  document.getElementById('btn-again-busted').addEventListener('click', startGame);
+
+})();
+</script>
 </body>
 </html>
