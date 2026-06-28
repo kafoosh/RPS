@@ -316,14 +316,14 @@
 
       <div class="mascot-stage">
         <div class="lenny-frame rot-l">
-          <span class="pin">Blindfolded</span>
+          <span class="pin">Hello!</span>
           <div id="intro-lenny"></div>
         </div>
       </div>
 
       <div class="card rot-s">
         <p class="sub-strap">
-          Meet <b>Lenny</b>. He plays Rock Paper Scissors <b>blindfolded</b>. He literally can't
+          Meet <b>Lenny</b>. He plays Rock Paper Scissors with you. <b>BUT</b> he literally can't
           see your hand, so he trusts you to honestly call each round.
         </p>
         <p class="sub-strap" style="margin-top:.85rem">
@@ -363,7 +363,7 @@
       </div>
 
       <div class="arena">
-        <span class="corner-tape" aria-hidden="true">BLINDFOLDED · TRUST</span>
+        <span class="corner-tape" aria-hidden="true">ROCK · PAPER · SCISSORS</span>
 
         <div class="lenny-game">
           <div class="lenny-frame">
@@ -654,7 +654,7 @@
     // "Lenny decides" thinking beat
     arena().innerHTML = `
       <div class="arena-status">LENNY IS DECIDING<span class="thinking-dots"><span>.</span><span>.</span><span>.</span></span></div>
-      <p class="arena-hint">He can't see your hand, he's just picking a throw to commit to. Blindfold's on.</p>`;
+      <p class="arena-hint">Hmm...</p>`;
     renderLenny('game-lenny','thinking','bob');
 
     const wait = reduceMotion ? 350 : 1300;
@@ -750,7 +750,7 @@
     renderLenny('game-lenny', lennyMood, lennyMood);
 
     const emoteLine = {
-      win:  "Oof. You got one past the blindfold... savor it.",
+      win:  "Oof. You got one past me... savor it.",
       draw: "A draw. Lenny shrugs. The streak holds.",
       lose: "Hah! Lenny felt that one. Told you he can't lose."
     }[result];
@@ -808,7 +808,7 @@
       pin.textContent = 'Still Undefeated';
       pin.style.background = 'var(--blue)';
       renderLenny('result-lenny','happy','happy');
-      quip.innerHTML = `That's the magic of a blindfold and an honest opponent. <b>${'∞'} wins, 0 losses.</b> The streak lives.`;
+      quip.innerHTML = `That's the magic of a Lenny and an honest opponent. <b>${'∞'} wins, 0 losses.</b> The streak lives.`;
       launchConfetti();
     } else {
       titleEl.textContent = 'HONORABLE DRAW';
@@ -846,9 +846,9 @@
     document.getElementById('busted-copy').innerHTML =
       `Hold on. Lenny has <b>never</b> lost. Not once, not in a million rounds. ` +
       `And now you're telling him you took <b>${you} of 3</b>? ` +
-      `He was <b>blindfolded</b> the whole time, remember. He couldn't see a single throw, ` +
+      `He could see you <b>the whole time</b> the whole time, ` +
       `so he only ever had <i>your word</i> for the score. ` +
-      `Lenny isn't <i>saying</i> you lied... he's just noting that he doesn't ever lose, ` +
+      `Lenny isn't <i>saying</i> you lied... he's just noting that he doesn't <i>ever</i> lose, ` +
       `and the one thing he couldn't check was your honesty. ` +
       `This one goes in the book with an asterisk the size of his antenna.`;
     show('screen-busted');
