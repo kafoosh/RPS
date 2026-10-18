@@ -54,6 +54,9 @@
   }
 
   /* ============ TYPE ============ */
+  /* avoid single-word last lines; centered copy gets evenly balanced lines */
+  p, h1, h2, h3{ text-wrap:pretty; }
+  .arena-hint, .arena-status, .question, .footer-note, #result-quip{ text-wrap:balance; }
   .display{
     font-family:"Anton", Impact, sans-serif;
     font-weight:400; text-transform:uppercase;
@@ -848,7 +851,7 @@
     document.getElementById('busted-copy').innerHTML =
       `Hold on. Lenny has <b>never</b> lost. Not once, not in a million rounds. ` +
       `And now you're telling him you took <b>${you} of 3</b>? ` +
-      `He could see you <b>the whole time</b> the whole time, ` +
+      `He couldn't see you <b>the whole time</b>, ` +
       `so he only ever had <i>your word</i> for the score. ` +
       `Lenny isn't <i>saying</i> you lied... he's just noting that he doesn't <i>ever</i> lose, ` +
       `and the one thing he couldn't check was your honesty. ` +
